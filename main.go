@@ -34,6 +34,7 @@ var baseurl string = "https://api.github.com/users/yoochanhong/following?per_pag
 func main() {
 	//e := echo.New()
 	//e.Logger.Fatal(e.Start(":8080"))
+	var userList []User
 	for i := 1; ; i++ {
 		pageURL := baseurl + "&page=" + strconv.Itoa(i)
 		res, err := http.Get(pageURL)
@@ -43,10 +44,13 @@ func main() {
 		err = json.NewDecoder(res.Body).Decode(&users)
 		utils.CheckErr(err)
 		for _, user := range users {
-			fmt.Println(user.Login)
+			userList = append(userList, user)
 		}
 		if len(users) != 100 {
 			break
 		}
+	}
+	for _, user := range userList {
+		fmt.Println(user.Login)
 	}
 }
