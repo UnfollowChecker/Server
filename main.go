@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type User struct {
@@ -28,22 +29,24 @@ type User struct {
 	SiteAdmin         bool
 }
 
-//var baseurl string = "https://api.github.com/users/yoochanhong/following?per_page=100"
+var baseurl string = "https://api.github.com/users/yoochanhong/following?per_page=100"
 
 func main() {
 	//e := echo.New()
 	//e.Logger.Fatal(e.Start(":8080"))
-	//var res *http.Response
-	//for i := 1; i < 3; i++ {
-	//pageURL := baseurl + "&page=" + strconv.Itoa(i)
-	res, err := http.Get("https://api.github.com/users/yoochanhong/following?per_page=100")
-	res.Header.Set("Authorization", "Bearer"+token)
-	utils.CheckErr(err)
-	var users []User
-	err = json.NewDecoder(res.Body).Decode(&users)
-	utils.CheckErr(err)
-	for _, user := range users {
-		fmt.Println(user.Login)
+	for i := 1; ; i++ {
+		pageURL := baseurl + "&page=" + strconv.Itoa(i)
+		res, err := http.Get(pageURL)
+		res.Header.Set("Authorization", "Bearer"+token)
+		utils.CheckErr(err)
+		var users []User
+		err = json.NewDecoder(res.Body).Decode(&users)
+		utils.CheckErr(err)
+		for _, user := range users {
+			fmt.Println(user.Login)
+		}
+		if len(users) != 100 {
+			break
+		}
 	}
-	//}
 }
