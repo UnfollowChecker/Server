@@ -1,29 +1,43 @@
 package main
 
-import "github.com/labstack/echo/v4"
+import (
+	"Server/utils"
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
 
 type User struct {
-	login             string
-	id                int
-	nodeId            string
-	avatarUrl         string
-	gravatarId        string
-	url               string
-	htmlUrl           string
-	followersUrl      string
-	followingUrl      string
-	gistsUrl          string
-	starredUrl        string
-	subscriptionsUrl  string
-	organizationsUrl  string
-	reposUrl          string
-	eventsUrl         string
-	receivedEventsUrl string
-	userType          string
-	siteAdmin         string
+	Login             string
+	Id                int
+	NodeId            string
+	AvatarUrl         string
+	GravatarId        string
+	Url               string
+	HtmlUrl           string
+	FollowersUrl      string
+	FollowingUrl      string
+	GistsUrl          string
+	StarredUrl        string
+	SubscriptionsUrl  string
+	OrganizationsUrl  string
+	ReposUrl          string
+	EventsUrl         string
+	ReceivedEventsUrl string
+	Type              string
+	SiteAdmin         bool
 }
 
 func main() {
-	e := echo.New()
-	e.Logger.Fatal(e.Start(":8080"))
+	//e := echo.New()
+	//e.Logger.Fatal(e.Start(":8080"))
+
+	res, err := http.Get("https://api.github.com/users/yoochanhong/following?per_page=100")
+	utils.CheckErr(err)
+	var users []User
+	err = json.NewDecoder(res.Body).Decode(&users)
+	utils.CheckErr(err)
+	for _, user := range users {
+		fmt.Println(user.Login)
+	}
 }
