@@ -46,8 +46,10 @@ func main() {
 	})
 
 	e.GET("/unfollower", func(c echo.Context) error {
-		followingList = getFollowUserList("yoochanhong")
-		followerList = getFollowerUserList("yoochanhong")
+
+		userName := c.QueryParam("userName")
+		followingList = getFollowUserList(userName)
+		followerList = getFollowerUserList(userName)
 
 		var list []User
 		for _, user := range followerList {
