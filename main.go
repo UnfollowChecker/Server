@@ -35,13 +35,21 @@ func main() {
 	//e := echo.New()
 	//e.Logger.Fatal(e.Start(":8080"))
 	var (
-		followingList  []User
-		unFollowerList []User
+		followingList []User
+		followerList  []User
 	)
+
+	m := make(map[string]int)
+
 	followingList = getFollowUserList("yoochanhong")
-	unFollowerList = getUnFollowUserList("yoochanhong", followingList)
-	for _, user := range unFollowerList {
-		fmt.Println(user.Login)
+	followerList = getFollowerUserList("yoochanhong")
+	for _, user := range followerList {
+		m[user.Login] = 1
+	}
+	for _, user := range followingList {
+		if m[user.Login] != 1 {
+			fmt.Println(user.Login)
+		}
 	}
 }
 
@@ -52,7 +60,7 @@ func getFollowUserList(userName string) []User {
 		pageURL := baseurl + userName + "/following?per_page=100&page=" + strconv.Itoa(i)
 		req, err := http.NewRequest("GET", pageURL, nil)
 		utils.CheckErr(err)
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Authorization", "Bearer"+token)
 		client := &http.Client{}
 
 		res, err := client.Do(req)
@@ -70,19 +78,26 @@ func getFollowUserList(userName string) []User {
 	return userList
 }
 
-// 내가 팔로우했지만 나를 팔로우하지 않은 사람들을 모두 가져오는 함수
-func getUnFollowUserList(userName string, followList []User) []User {
+// 내 팔로워를 모두 가져오는 함수
+func getFollowerUserList(userName string) []User {
 	var userList []User
-	for _, user := range followList {
-		pageURL := baseurl + user.Login + "/following/" + userName
+	for i := 1; ; i++ {
+		pageURL := baseurl + userName + "/followers?per_page=100&page=" + strconv.Itoa(i)
 		req, err := http.NewRequest("GET", pageURL, nil)
 		utils.CheckErr(err)
-		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Authorization", "Bearer"+token)
 		client := &http.Client{}
+
 		res, err := client.Do(req)
 		utils.CheckErr(err)
-		if res.StatusCode == 404 {
+		var users []User
+		err = json.NewDecoder(res.Body).Decode(&users)
+		utils.CheckErr(err)
+		for _, user := range users {
 			userList = append(userList, user)
+		}
+		if len(users) != 100 {
+			break
 		}
 	}
 	return userList
