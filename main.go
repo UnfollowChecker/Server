@@ -3,7 +3,7 @@ package main
 import (
 	"Server/utils"
 	"encoding/json"
-	"fmt"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 )
@@ -32,25 +32,36 @@ type User struct {
 var baseurl = "https://api.github.com/users/"
 
 func main() {
-	//e := echo.New()
-	//e.Logger.Fatal(e.Start(":8080"))
+
 	var (
 		followingList []User
 		followerList  []User
 	)
 
 	m := make(map[string]int)
+	e := echo.New()
 
-	followingList = getFollowUserList("yoochanhong")
-	followerList = getFollowerUserList("yoochanhong")
-	for _, user := range followerList {
-		m[user.Login] = 1
-	}
-	for _, user := range followingList {
-		if m[user.Login] != 1 {
-			fmt.Println(user.Login)
+	e.GET("/", func(c echo.Context) error {
+		return c.String(200, "what")
+	})
+
+	e.GET("/unfollower", func(c echo.Context) error {
+		followingList = getFollowUserList("yoochanhong")
+		followerList = getFollowerUserList("yoochanhong")
+
+		var list []User
+		for _, user := range followerList {
+			m[user.Login] = 1
 		}
-	}
+		for _, user := range followingList {
+			if m[user.Login] != 1 {
+				list = append(list, user)
+			}
+		}
+		return c.JSON(200, list)
+	})
+
+	e.Logger.Fatal(e.Start(":8080"))
 }
 
 // 내가 팔로잉한 사람들을 긁어오는 함수
