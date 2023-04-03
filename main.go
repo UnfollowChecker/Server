@@ -29,7 +29,7 @@ type User struct {
 	SiteAdmin         bool
 }
 
-var baseurl string = "https://api.github.com/users/"
+var baseurl = "https://api.github.com/users/"
 
 func main() {
 	//e := echo.New()
