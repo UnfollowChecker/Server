@@ -40,12 +40,6 @@ var baseurl = "https://api.github.com/users/"
 
 func main() {
 
-	var (
-		followingList []User
-		followerList  []User
-	)
-
-	m := make(map[string]int)
 	e := echo.New()
 
 	e.GET("/", func(c echo.Context) error {
@@ -67,7 +61,6 @@ func main() {
 		followerList = getFollowUserList(userName, "followers", followerNum)
 		mutex := sync.Mutex{}
 
-		var list []User
 		for _, user := range followerList {
 			go userSet1(user, m, &mutex)
 		}
