@@ -29,6 +29,11 @@ type User struct {
 	SiteAdmin         bool   `json:"site_admin"`
 }
 
+type findUser struct {
+	Followers int `json:"followers"`
+	Following int `json:"following"`
+}
+
 var baseurl = "https://api.github.com/users/"
 
 func main() {
