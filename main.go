@@ -154,8 +154,18 @@ func getUserFollowInfo(userName string) (int, int) {
 	return user.Following, user.Followers
 }
 
+// 맵에 유저의 정보를 담아줄 함수
 func userSet1(user User, m map[int]int, mutex *sync.Mutex) {
 	mutex.Lock()
 	m[user.ID] = 1
+	mutex.Unlock()
+}
+
+// 맵에 user가 들어있는지 확인해줄 함수
+func findUnfollwer(user User, m map[int]int, mutex *sync.Mutex, ch chan User) {
+	mutex.Lock()
+	if m[user.ID] != 1 {
+		ch <- user
+	}
 	mutex.Unlock()
 }
