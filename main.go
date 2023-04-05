@@ -130,31 +130,6 @@ func getFollowUserList(userName string, follow string, length int) []User {
 	return list
 }
 
-// 내 팔로워를 모두 가져오는 함수
-func getFollowerUserList(userName string) []User {
-	var userList []User
-	for i := 1; ; i++ {
-		pageURL := baseurl + userName + "/followers?per_page=100&page=" + strconv.Itoa(i)
-		req, err := http.NewRequest("GET", pageURL, nil)
-		utils.CheckErr(err)
-		req.Header.Set("Authorization", "Bearer"+token)
-		client := &http.Client{}
-
-		res, err := client.Do(req)
-		utils.CheckErr(err)
-		var users []User
-		err = json.NewDecoder(res.Body).Decode(&users)
-		utils.CheckErr(err)
-		for _, user := range users {
-			userList = append(userList, user)
-		}
-		if len(users) != 100 {
-			break
-		}
-	}
-	return userList
-}
-
 // 내 팔로잉 팔로워 갯수를 알아오는 함수
 func getUserFollowInfo(userName string) (int, int) {
 	url := baseurl + userName
