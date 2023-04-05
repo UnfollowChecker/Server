@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 type User struct {
@@ -61,10 +62,13 @@ func main() {
 
 		userName := c.QueryParam("userName")
 		followingNum, followerNum := getUserFollowInfo(userName)
+		followingList = getFollowUserList(userName, "following", followingNum)
+		followerList = getFollowUserList(userName, "followers", followerNum)
+		mutex := sync.Mutex{}
 
 		var list []User
 		for _, user := range followerList {
-			m[user.Login] = 1
+			go userSet1(user, m, &mutex)
 		}
 		for _, user := range followingList {
 			if m[user.Login] != 1 {
@@ -148,4 +152,10 @@ func getUserFollowInfo(userName string) (int, int) {
 	err = json.Unmarshal(body, &user)
 	utils.CheckErr(err)
 	return user.Following, user.Followers
+}
+
+func userSet1(user User, m map[int]int, mutex *sync.Mutex) {
+	mutex.Lock()
+	m[user.ID] = 1
+	mutex.Unlock()
 }
