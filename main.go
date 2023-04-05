@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 	"sync"
 )
@@ -70,6 +71,9 @@ func main() {
 				list = append(list, <-unfollowerCh)
 			}()
 		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Login < list[j].Login
+		})
 		return c.JSON(200, list)
 	})
 
@@ -97,6 +101,9 @@ func main() {
 				list = append(list, <-unfollowerCh)
 			}()
 		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Login < list[j].Login
+		})
 		return c.JSON(200, list)
 	})
 
