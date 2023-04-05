@@ -72,29 +72,31 @@ func main() {
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
-// 내가 팔로잉한 사람들을 긁어오는 함수
-func getFollowUserList(userName string) []User {
-	var userList []User
-	for i := 1; ; i++ {
-		pageURL := baseurl + userName + "/following?per_page=100&page=" + strconv.Itoa(i)
+// 팔로잉, 팔로워 두 함수를 하나로 합침
+func getFollowUserList(userName string, follow string, length int) []User {
+	var list []User
+	for i := 1; length > 0; i++ {
+		pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(i)
 		req, err := http.NewRequest("GET", pageURL, nil)
-		utils.CheckErr(err)
-		req.Header.Set("Authorization", "Bearer"+token)
+		if err != nil {
+			panic(err)
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
 		client := &http.Client{}
-
 		res, err := client.Do(req)
-		utils.CheckErr(err)
-		var users []User
-		err = json.NewDecoder(res.Body).Decode(&users)
-		utils.CheckErr(err)
-		for _, user := range users {
-			userList = append(userList, user)
+		if err != nil {
+			panic(err)
 		}
-		if len(users) != 100 {
-			break
+		body, err := ioutil.ReadAll(res.Body)
+		var following []User
+		err = json.Unmarshal(body, &following)
+		utils.CheckErr(err)
+		for _, user := range following {
+			list = append(list, user)
 		}
+		length -= 100
 	}
-	return userList
+	return list
 }
 
 // 내 팔로워를 모두 가져오는 함수
