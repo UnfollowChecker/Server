@@ -4,6 +4,7 @@ import (
 	"Server/utils"
 	"encoding/json"
 	"github.com/labstack/echo/v4"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 )
@@ -119,4 +120,25 @@ func getFollowerUserList(userName string) []User {
 		}
 	}
 	return userList
+}
+
+// 내 팔로잉 팔로워 갯수를 알아오는 함수
+func getUserFollowInfo(userName string) (int, int) {
+	url := baseurl + userName
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	client := &http.Client{}
+
+	res, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	var user findUser
+	err = json.Unmarshal(body, &user)
+	utils.CheckErr(err)
+	return user.Following, user.Followers
 }
