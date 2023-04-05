@@ -46,6 +46,33 @@ func main() {
 		return c.String(200, "what")
 	})
 
+	e.GET("/unfollowing", func(c echo.Context) error {
+		m := make(map[int]int)
+		unfollowerCh := make(chan User)
+		var (
+			followingList []User
+			followerList  []User
+			list          []User
+		)
+
+		userName := c.QueryParam("userName")
+		followingNum, followerNum := getUserFollowInfo(userName)
+		followingList = getFollowUserList(userName, "following", followingNum)
+		followerList = getFollowUserList(userName, "followers", followerNum)
+		mutex := sync.Mutex{}
+
+		for _, user := range followingList {
+			go userSet1(user, m, &mutex)
+		}
+		for _, user := range followerList {
+			go findUnfollwer(user, m, &mutex, unfollowerCh)
+			go func() {
+				list = append(list, <-unfollowerCh)
+			}()
+		}
+		return c.JSON(200, list)
+	})
+
 	e.GET("/unfollower", func(c echo.Context) error {
 		m := make(map[int]int)
 		unfollowerCh := make(chan User)
