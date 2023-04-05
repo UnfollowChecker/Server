@@ -54,6 +54,7 @@ func main() {
 
 	e.GET("/unfollower", func(c echo.Context) error {
 		m := make(map[int]int)
+		unfollowerCh := make(chan User)
 		var (
 			followingList []User
 			followerList  []User
@@ -71,9 +72,10 @@ func main() {
 			go userSet1(user, m, &mutex)
 		}
 		for _, user := range followingList {
-			if m[user.Login] != 1 {
-				list = append(list, user)
-			}
+			go findUnfollwer(user, m, &mutex, unfollowerCh)
+			go func() {
+				list = append(list, <-unfollowerCh)
+			}()
 		}
 		return c.JSON(200, list)
 	})
