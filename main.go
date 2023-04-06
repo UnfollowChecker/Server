@@ -53,9 +53,10 @@ func main() {
 		followingNum, _ := getUserFollowInfo(userName)
 		fmt.Println(followingNum)
 		followingList = getFollowUserList(userName, "following", followingNum)
-		for _, user := range followingList {
-			fmt.Println(user.Login)
-		}
+		//for _,  := range followingList {
+		//	//fmt.Println(user.Login)
+		//}
+		fmt.Println(len(followingList))
 		return c.JSON(200, "what")
 	})
 	e.Logger.Fatal(e.Start(":8080"))
@@ -69,29 +70,18 @@ func getFollowUserList(userName string, follow string, length int) []User {
 	} else {
 		length = length / 100
 	}
-	list := make([]User, userLen, userLen)
+	list := make([]User, 0)
 	c := make(chan User)
 	for i := 1; i <= length; i++ {
-		go func() {
-			pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(length)
-			req, err := http.NewRequest("GET", pageURL, nil)
-			utils.CheckErr(err)
-			req.Header.Set("Authorization", "Bearer "+token)
-			client := &http.Client{}
-			res, err := client.Do(req)
-			utils.CheckErr(err)
-			body, err := ioutil.ReadAll(res.Body)
-			var following []User
-			err = json.Unmarshal(body, &following)
-			utils.CheckErr(err)
-			for _, user := range following {
-				c <- user
-			}
-		}()
+		go hitURL(userName, follow, i, c)
 	}
+	fmt.Println("sdfsdf", userLen)
 	for i := 0; i < userLen; i++ {
-		list = append(list, <-c)
+		user := <-c
+		list = append(list, user)
 	}
+	fmt.Println("리스트 갯수 : ", len(list))
+	//fmt.Println(list)
 	return list
 }
 
@@ -132,4 +122,22 @@ func findUnfollwer(user User, m map[string]int, mutex *sync.Mutex, ch chan User)
 		ch <- user
 	}
 	mutex.Unlock()
+}
+
+func hitURL(userName string, follow string, i int, c chan User) {
+	pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(i)
+	fmt.Println(pageURL)
+	req, err := http.NewRequest("GET", pageURL, nil)
+	utils.CheckErr(err)
+	req.Header.Set("Authorization", "Bearer "+token)
+	client := &http.Client{}
+	res, err := client.Do(req)
+	utils.CheckErr(err)
+	body, err := ioutil.ReadAll(res.Body)
+	var following []User
+	err = json.Unmarshal(body, &following)
+	utils.CheckErr(err)
+	for _, user := range following {
+		c <- user
+	}
 }
