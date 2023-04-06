@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"sync"
 )
 
 type User struct {
@@ -46,18 +45,26 @@ func main() {
 	e.GET("/unfollower", func(c echo.Context) error {
 		userName := c.QueryParam("userName")
 		//unfollowCh := make(chan User)
-		//m := make(map[string]int)
+		m := make(map[string]int)
 		var (
 			followingList []User
+			followersList []User
+			list          []User
 		)
-		followingNum, _ := getUserFollowInfo(userName)
-		fmt.Println(followingNum)
+		followingNum, followersNum := getUserFollowInfo(userName)
 		followingList = getFollowUserList(userName, "following", followingNum)
-		//for _,  := range followingList {
-		//	//fmt.Println(user.Login)
-		//}
-		fmt.Println(len(followingList))
-		return c.JSON(200, "what")
+		followersList = getFollowUserList(userName, "followers", followersNum)
+		for _, user := range followersList {
+			userSet1(user, m)
+		}
+		for _, user := range followingList {
+			a := findUnfollwer(user, m)
+			if a == 1 {
+				list = append(list, user)
+			}
+		}
+		defer fmt.Println(len(list))
+		return c.JSON(200, list)
 	})
 	e.Logger.Fatal(e.Start(":8080"))
 }
@@ -75,13 +82,10 @@ func getFollowUserList(userName string, follow string, length int) []User {
 	for i := 1; i <= length; i++ {
 		go hitURL(userName, follow, i, c)
 	}
-	fmt.Println("sdfsdf", userLen)
 	for i := 0; i < userLen; i++ {
 		user := <-c
 		list = append(list, user)
 	}
-	fmt.Println("리스트 갯수 : ", len(list))
-	//fmt.Println(list)
 	return list
 }
 
@@ -89,16 +93,12 @@ func getFollowUserList(userName string, follow string, length int) []User {
 func getUserFollowInfo(userName string) (int, int) {
 	url := baseurl + userName
 	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckErr(err)
 	req.Header.Set("Authorization", "Bearer "+token)
 	client := &http.Client{}
 
 	res, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckErr(err)
 	body, err := ioutil.ReadAll(res.Body)
 	var user findUser
 	err = json.Unmarshal(body, &user)
@@ -108,25 +108,21 @@ func getUserFollowInfo(userName string) (int, int) {
 
 // 맵에 유저의 정보를 담아줄 함수
 // 문제 없는거 확인
-func userSet1(user User, m map[string]int, mutex *sync.Mutex) {
-	//mutex.Lock()
+func userSet1(user User, m map[string]int) {
 	m[user.Login] = 1
-	//mutex.Unlock()
 }
 
 // 맵에 user가 들어있는지 확인해줄 함수
-func findUnfollwer(user User, m map[string]int, mutex *sync.Mutex, ch chan User) {
-	mutex.Lock()
+func findUnfollwer(user User, m map[string]int) int {
 	val := m[user.Login]
 	if val != 1 {
-		ch <- user
+		return 1
 	}
-	mutex.Unlock()
+	return 0
 }
 
 func hitURL(userName string, follow string, i int, c chan User) {
 	pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(i)
-	fmt.Println(pageURL)
 	req, err := http.NewRequest("GET", pageURL, nil)
 	utils.CheckErr(err)
 	req.Header.Set("Authorization", "Bearer "+token)
