@@ -3,11 +3,9 @@ package main
 import (
 	"Server/utils"
 	"encoding/json"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
-	"sort"
 	"strconv"
 	"sync"
 )
@@ -44,69 +42,8 @@ func main() {
 
 	e := echo.New()
 
-	e.GET("/", func(c echo.Context) error {
-		return c.String(200, "what")
-	})
-
-	e.GET("/unfollowing", func(c echo.Context) error {
-		m := make(map[string]int)
-		mutex := sync.Mutex{}
-		unfollowerCh := make(chan User)
-		var (
-			followingList []User
-			followerList  []User
-			list          []User
-		)
-
-		userName := c.QueryParam("userName")
-		followingNum, followerNum := getUserFollowInfo(userName)
-		followingList = getFollowUserList(userName, "following", followingNum)
-		followerList = getFollowUserList(userName, "followers", followerNum)
-
-		for _, user := range followingList {
-			go userSet1(user, m, &mutex)
-		}
-		for _, user := range followerList {
-			go findUnfollwer(user, m, &mutex, unfollowerCh)
-
-		}
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Login < list[j].Login
-		})
-		return c.JSON(200, list)
-	})
-
 	e.GET("/unfollower", func(c echo.Context) error {
-		m := make(map[string]int)
-		mutex := sync.Mutex{}
-		var (
-			followingList []User
-			followerList  []User
-			list          []User
-		)
 
-		userName := c.QueryParam("userName")
-		followingNum, followerNum := getUserFollowInfo(userName)
-		followingList = getFollowUserList(userName, "following", followingNum)
-		followerList = getFollowUserList(userName, "followers", followerNum)
-
-		for _, user := range followerList {
-			go userSet1(user, m, &mutex)
-		}
-		fmt.Println("맵 추가")
-		for _, user := range followingList {
-			unfollowerCh := make(chan User)
-			go findUnfollwer(user, m, &mutex, unfollowerCh)
-			go func() {
-				list = append(list, <-unfollowerCh)
-				close(unfollowerCh)
-			}()
-		}
-		fmt.Println(len(list))
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Login < list[j].Login
-		})
-		return c.JSON(200, list)
 	})
 
 	e.Logger.Fatal(e.Start(":8080"))
@@ -163,9 +100,9 @@ func getUserFollowInfo(userName string) (int, int) {
 // 맵에 유저의 정보를 담아줄 함수
 // 문제 없는거 확인
 func userSet1(user User, m map[string]int, mutex *sync.Mutex) {
-	mutex.Lock()
+	//mutex.Lock()
 	m[user.Login] = 1
-	mutex.Unlock()
+	//mutex.Unlock()
 }
 
 // 맵에 user가 들어있는지 확인해줄 함수
