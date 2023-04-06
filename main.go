@@ -3,7 +3,6 @@ package main
 import (
 	"Server/utils"
 	"encoding/json"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
@@ -41,6 +40,29 @@ var baseurl = "https://api.github.com/users/"
 func main() {
 
 	e := echo.New()
+	e.GET("/unfollowing", func(c echo.Context) error {
+		userName := c.QueryParam("userName")
+		//unfollowCh := make(chan User)
+		m := make(map[string]int)
+		var (
+			followingList []User
+			followersList []User
+			list          []User
+		)
+		followingNum, followersNum := getUserFollowInfo(userName)
+		followingList = getFollowUserList(userName, "following", followingNum)
+		followersList = getFollowUserList(userName, "followers", followersNum)
+		for _, user := range followingList {
+			userSet1(user, m)
+		}
+		for _, user := range followersList {
+			a := findUnfollwer(user, m)
+			if a == 1 {
+				list = append(list, user)
+			}
+		}
+		return c.JSON(200, list)
+	})
 
 	e.GET("/unfollower", func(c echo.Context) error {
 		userName := c.QueryParam("userName")
@@ -63,7 +85,6 @@ func main() {
 				list = append(list, user)
 			}
 		}
-		defer fmt.Println(len(list))
 		return c.JSON(200, list)
 	})
 	e.Logger.Fatal(e.Start(":8080"))
