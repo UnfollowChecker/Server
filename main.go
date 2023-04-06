@@ -46,6 +46,7 @@ func main() {
 	e.GET("/unfollower", func(c echo.Context) error {
 		userName := c.QueryParam("userName")
 		followingNum, followersNum := getUserFollowInfo(userName)
+		getFollowUserList(userName, "following", followingNum)
 		fmt.Println(followersNum, followingNum)
 		return c.JSON(200, "what")
 	})
@@ -56,7 +57,13 @@ func main() {
 // 팔로잉, 팔로워 두 함수를 하나로 합침
 func getFollowUserList(userName string, follow string, length int) []User {
 	var list []User
-	for i := 1; length > 0; i++ {
+	if length%100 != 0 {
+		length = length/100 + 1
+	} else {
+		length = length / 100
+	}
+	fmt.Println(length)
+	for i := 1; i <= length; i++ {
 		pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(i)
 		req, err := http.NewRequest("GET", pageURL, nil)
 		if err != nil {
@@ -75,7 +82,6 @@ func getFollowUserList(userName string, follow string, length int) []User {
 		for _, user := range following {
 			list = append(list, user)
 		}
-		length -= 100
 	}
 	return list
 }
