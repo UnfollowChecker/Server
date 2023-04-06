@@ -45,43 +45,52 @@ func main() {
 
 	e.GET("/unfollower", func(c echo.Context) error {
 		userName := c.QueryParam("userName")
-		followingNum, followersNum := getUserFollowInfo(userName)
-		getFollowUserList(userName, "following", followingNum)
-		fmt.Println(followersNum, followingNum)
+		//unfollowCh := make(chan User)
+		//m := make(map[string]int)
+		var (
+			followingList []User
+		)
+		followingNum, _ := getUserFollowInfo(userName)
+		fmt.Println(followingNum)
+		followingList = getFollowUserList(userName, "following", followingNum)
+		for _, user := range followingList {
+			fmt.Println(user.Login)
+		}
 		return c.JSON(200, "what")
 	})
-
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
 // 팔로잉, 팔로워 두 함수를 하나로 합침
 func getFollowUserList(userName string, follow string, length int) []User {
-	var list []User
+	userLen := length
 	if length%100 != 0 {
 		length = length/100 + 1
 	} else {
 		length = length / 100
 	}
-	fmt.Println(length)
+	list := make([]User, userLen, userLen)
+	c := make(chan User)
 	for i := 1; i <= length; i++ {
-		pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(i)
-		req, err := http.NewRequest("GET", pageURL, nil)
-		if err != nil {
-			panic(err)
-		}
-		req.Header.Set("Authorization", "Bearer "+token)
-		client := &http.Client{}
-		res, err := client.Do(req)
-		if err != nil {
-			panic(err)
-		}
-		body, err := ioutil.ReadAll(res.Body)
-		var following []User
-		err = json.Unmarshal(body, &following)
-		utils.CheckErr(err)
-		for _, user := range following {
-			list = append(list, user)
-		}
+		go func() {
+			pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(length)
+			req, err := http.NewRequest("GET", pageURL, nil)
+			utils.CheckErr(err)
+			req.Header.Set("Authorization", "Bearer "+token)
+			client := &http.Client{}
+			res, err := client.Do(req)
+			utils.CheckErr(err)
+			body, err := ioutil.ReadAll(res.Body)
+			var following []User
+			err = json.Unmarshal(body, &following)
+			utils.CheckErr(err)
+			for _, user := range following {
+				c <- user
+			}
+		}()
+	}
+	for i := 0; i < userLen; i++ {
+		list = append(list, <-c)
 	}
 	return list
 }
