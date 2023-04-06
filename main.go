@@ -79,7 +79,6 @@ func main() {
 	e.GET("/unfollower", func(c echo.Context) error {
 		m := make(map[string]int)
 		mutex := sync.Mutex{}
-		unfollowerCh := make(chan User)
 		var (
 			followingList []User
 			followerList  []User
@@ -96,9 +95,11 @@ func main() {
 		}
 		fmt.Println("맵 추가")
 		for _, user := range followingList {
+			unfollowerCh := make(chan User)
 			go findUnfollwer(user, m, &mutex, unfollowerCh)
 			go func() {
 				list = append(list, <-unfollowerCh)
+				close(unfollowerCh)
 			}()
 		}
 		fmt.Println(len(list))
