@@ -3,6 +3,7 @@ package main
 import (
 	"Server/utils"
 	"encoding/json"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
@@ -48,7 +49,8 @@ func main() {
 	})
 
 	e.GET("/unfollowing", func(c echo.Context) error {
-		m := make(map[int]int)
+		m := make(map[string]int)
+		mutex := sync.Mutex{}
 		unfollowerCh := make(chan User)
 		var (
 			followingList []User
@@ -60,16 +62,13 @@ func main() {
 		followingNum, followerNum := getUserFollowInfo(userName)
 		followingList = getFollowUserList(userName, "following", followingNum)
 		followerList = getFollowUserList(userName, "followers", followerNum)
-		mutex := sync.Mutex{}
 
 		for _, user := range followingList {
 			go userSet1(user, m, &mutex)
 		}
 		for _, user := range followerList {
 			go findUnfollwer(user, m, &mutex, unfollowerCh)
-			go func() {
-				list = append(list, <-unfollowerCh)
-			}()
+
 		}
 		sort.Slice(list, func(i, j int) bool {
 			return list[i].Login < list[j].Login
@@ -78,7 +77,8 @@ func main() {
 	})
 
 	e.GET("/unfollower", func(c echo.Context) error {
-		m := make(map[int]int)
+		m := make(map[string]int)
+		mutex := sync.Mutex{}
 		unfollowerCh := make(chan User)
 		var (
 			followingList []User
@@ -90,17 +90,18 @@ func main() {
 		followingNum, followerNum := getUserFollowInfo(userName)
 		followingList = getFollowUserList(userName, "following", followingNum)
 		followerList = getFollowUserList(userName, "followers", followerNum)
-		mutex := sync.Mutex{}
 
 		for _, user := range followerList {
 			go userSet1(user, m, &mutex)
 		}
+		fmt.Println("맵 추가")
 		for _, user := range followingList {
 			go findUnfollwer(user, m, &mutex, unfollowerCh)
 			go func() {
 				list = append(list, <-unfollowerCh)
 			}()
 		}
+		fmt.Println(len(list))
 		sort.Slice(list, func(i, j int) bool {
 			return list[i].Login < list[j].Login
 		})
@@ -159,16 +160,18 @@ func getUserFollowInfo(userName string) (int, int) {
 }
 
 // 맵에 유저의 정보를 담아줄 함수
-func userSet1(user User, m map[int]int, mutex *sync.Mutex) {
+// 문제 없는거 확인
+func userSet1(user User, m map[string]int, mutex *sync.Mutex) {
 	mutex.Lock()
-	m[user.ID] = 1
+	m[user.Login] = 1
 	mutex.Unlock()
 }
 
 // 맵에 user가 들어있는지 확인해줄 함수
-func findUnfollwer(user User, m map[int]int, mutex *sync.Mutex, ch chan User) {
+func findUnfollwer(user User, m map[string]int, mutex *sync.Mutex, ch chan User) {
 	mutex.Lock()
-	if m[user.ID] != 1 {
+	val := m[user.Login]
+	if val != 1 {
 		ch <- user
 	}
 	mutex.Unlock()
