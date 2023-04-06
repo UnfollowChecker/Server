@@ -3,6 +3,7 @@ package main
 import (
 	"Server/utils"
 	"encoding/json"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
@@ -43,7 +44,10 @@ func main() {
 	e := echo.New()
 
 	e.GET("/unfollower", func(c echo.Context) error {
-
+		userName := c.QueryParam("userName")
+		followingNum, followersNum := getUserFollowInfo(userName)
+		fmt.Println(followersNum, followingNum)
+		return c.JSON(200, "what")
 	})
 
 	e.Logger.Fatal(e.Start(":8080"))
