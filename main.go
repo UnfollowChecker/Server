@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Server/handler"
 	"Server/models"
 	"Server/utils"
 	"encoding/json"
@@ -8,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sort"
-	"strconv"
 )
 
 type User []models.GithubUserInfo
@@ -35,10 +35,10 @@ func main() {
 		followingList = getFollowUserList(userName, "following", followingNum)
 		followersList = getFollowUserList(userName, "followers", followersNum)
 		for _, user := range followingList {
-			userSet1(user, m)
+			handler.UserSet1(user, m)
 		}
 		for _, user := range followersList {
-			a := findUnfollwer(user, m)
+			a := handler.FindUnfollwer(user, m)
 			if a == 1 {
 				list = append(list, user)
 			}
@@ -60,10 +60,10 @@ func main() {
 		followingList = getFollowUserList(userName, "following", followingNum)
 		followersList = getFollowUserList(userName, "followers", followersNum)
 		for _, user := range followersList {
-			userSet1(user, m)
+			handler.UserSet1(user, m)
 		}
 		for _, user := range followingList {
-			a := findUnfollwer(user, m)
+			a := handler.FindUnfollwer(user, m)
 			if a == 1 {
 				list = append(list, user)
 			}
@@ -85,7 +85,7 @@ func getFollowUserList(userName string, follow string, length int) User {
 	list := make(User, 0)
 	c := make(chan models.GithubUserInfo)
 	for i := 1; i <= length; i++ {
-		go hitURL(userName, follow, i, c)
+		go handler.HitURL(userName, follow, i, c)
 	}
 	for i := 0; i < userLen; i++ {
 		user := <-c
@@ -109,36 +109,4 @@ func getUserFollowInfo(userName string) (int, int) {
 	err = json.Unmarshal(body, &user)
 	utils.CheckErr(err)
 	return user.Following, user.Followers
-}
-
-// 맵에 유저의 정보를 담아줄 함수
-// 문제 없는거 확인
-func userSet1(user models.GithubUserInfo, m map[string]int) {
-	m[user.Login] = 1
-}
-
-// 맵에 user가 들어있는지 확인해줄 함수
-func findUnfollwer(user models.GithubUserInfo, m map[string]int) int {
-	val := m[user.Login]
-	if val != 1 {
-		return 1
-	}
-	return 0
-}
-
-func hitURL(userName string, follow string, i int, c chan models.GithubUserInfo) {
-	pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(i)
-	req, err := http.NewRequest("GET", pageURL, nil)
-	utils.CheckErr(err)
-	req.Header.Set("Authorization", "Bearer "+token)
-	client := &http.Client{}
-	res, err := client.Do(req)
-	utils.CheckErr(err)
-	body, err := ioutil.ReadAll(res.Body)
-	var following User
-	err = json.Unmarshal(body, &following)
-	utils.CheckErr(err)
-	for _, user := range following {
-		c <- user
-	}
 }
