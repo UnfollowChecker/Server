@@ -37,7 +37,7 @@ func main() {
 				list = append(list, user)
 			}
 		}
-		sort.Sort(User(list))
+		sort.Sort(list)
 		return c.JSON(200, list)
 	})
 
@@ -62,7 +62,7 @@ func main() {
 				list = append(list, user)
 			}
 		}
-		sort.Sort(User(list))
+		sort.Sort(list)
 		return c.JSON(200, list)
 	})
 	e.Logger.Fatal(e.Start(":8080"))
