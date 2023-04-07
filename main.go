@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
@@ -46,6 +47,9 @@ func main() {
 				list = append(list, user)
 			}
 		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Login < list[j].Login
+		})
 		return c.JSON(200, list)
 	})
 
@@ -70,6 +74,9 @@ func main() {
 				list = append(list, user)
 			}
 		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Login < list[j].Login
+		})
 		return c.JSON(200, list)
 	})
 	e.Logger.Fatal(e.Start(":8080"))
