@@ -21,6 +21,12 @@ type findUser struct {
 	Following int `json:"following"`
 }
 
+type ByLogin []User
+
+func (a ByLogin) Len() int           { return len(a) }
+func (a ByLogin) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByLogin) Less(i, j int) bool { return a[i].Login < a[j].Login }
+
 var baseurl = "https://api.github.com/users/"
 
 func main() {
@@ -47,9 +53,7 @@ func main() {
 				list = append(list, user)
 			}
 		}
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Login < list[j].Login
-		})
+		sort.Sort(ByLogin(list))
 		return c.JSON(200, list)
 	})
 
@@ -74,9 +78,7 @@ func main() {
 				list = append(list, user)
 			}
 		}
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Login < list[j].Login
-		})
+		sort.Sort(ByLogin(list))
 		return c.JSON(200, list)
 	})
 	e.Logger.Fatal(e.Start(":8080"))
