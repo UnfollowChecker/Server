@@ -5,22 +5,28 @@ import (
 	"Server/private"
 	"Server/utils"
 	"encoding/json"
+	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
-var baseurl = "https://api.github.com/users/"
-
 type User []models.GithubUserInfo
 
+func (a User) Len() int           { return len(a) }
+func (a User) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a User) Less(i, j int) bool { return a[i].Login < a[j].Login }
+
+var baseurl = "https://api.github.com/users/"
+
 // 맵에 유저의 정보를 담아줄 함수
-func UserSet1(user models.GithubUserInfo, m map[string]int) {
+func userSet1(user models.GithubUserInfo, m map[string]int) {
 	m[user.Login] = 1
 }
 
 // 맵에 user가 들어있는지 확인해줄 함수
-func FindUnfollwer(user models.GithubUserInfo, m map[string]int) int {
+func findUnfollwer(user models.GithubUserInfo, m map[string]int) int {
 	val := m[user.Login]
 	if val != 1 {
 		return 1
@@ -46,7 +52,7 @@ func hitURL(userName string, follow string, i int, c chan models.GithubUserInfo)
 }
 
 // 팔로잉, 팔로워 두 함수를 하나로 합침
-func GetFollowUserList(userName string, follow string, length int) User {
+func getFollowUserList(userName string, follow string, length int) User {
 	userLen := length
 	if length%100 != 0 {
 		length = length/100 + 1
@@ -66,7 +72,7 @@ func GetFollowUserList(userName string, follow string, length int) User {
 }
 
 // 내 팔로잉 팔로워 갯수를 알아오는 함수
-func GetUserFollowInfo(userName string) (int, int) {
+func getUserFollowInfo(userName string) (int, int) {
 	url := baseurl + userName
 	req, err := http.NewRequest("GET", url, nil)
 	utils.CheckErr(err)
@@ -80,4 +86,52 @@ func GetUserFollowInfo(userName string) (int, int) {
 	err = json.Unmarshal(body, &user)
 	utils.CheckErr(err)
 	return user.Following, user.Followers
+}
+
+func UnfollowingCheckFunc(c echo.Context) error {
+	userName := c.QueryParam("userName")
+	m := make(map[string]int)
+	var (
+		followingList User
+		followersList User
+		list          User
+	)
+	followingNum, followersNum := getUserFollowInfo(userName)
+	followingList = getFollowUserList(userName, "following", followingNum)
+	followersList = getFollowUserList(userName, "followers", followersNum)
+	for _, user := range followingList {
+		userSet1(user, m)
+	}
+	for _, user := range followersList {
+		a := findUnfollwer(user, m)
+		if a == 1 {
+			list = append(list, user)
+		}
+	}
+	sort.Sort(list)
+	return c.JSON(200, list)
+}
+
+func UnfollowerCheckFunc(c echo.Context) error {
+	userName := c.QueryParam("userName")
+	m := make(map[string]int)
+	var (
+		followingList User
+		followersList User
+		list          User
+	)
+	followingNum, followersNum := getUserFollowInfo(userName)
+	followingList = getFollowUserList(userName, "following", followingNum)
+	followersList = getFollowUserList(userName, "followers", followersNum)
+	for _, user := range followersList {
+		userSet1(user, m)
+	}
+	for _, user := range followingList {
+		a := findUnfollwer(user, m)
+		if a == 1 {
+			list = append(list, user)
+		}
+	}
+	sort.Sort(list)
+	return c.JSON(200, list)
 }
