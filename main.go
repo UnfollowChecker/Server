@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Server/models"
 	"Server/utils"
 	"encoding/json"
 	"github.com/labstack/echo/v4"
@@ -10,18 +11,7 @@ import (
 	"strconv"
 )
 
-type githubUserInfo struct {
-	Login     string `json:"login"`
-	AvatarURL string `json:"avatar_url"`
-	HTMLURL   string `json:"html_url"`
-}
-
-type findUser struct {
-	Followers int `json:"followers"`
-	Following int `json:"following"`
-}
-
-type User []githubUserInfo
+type User []models.GithubUserInfo
 
 func (a User) Len() int           { return len(a) }
 func (a User) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
@@ -93,7 +83,7 @@ func getFollowUserList(userName string, follow string, length int) User {
 		length = length / 100
 	}
 	list := make(User, 0)
-	c := make(chan githubUserInfo)
+	c := make(chan models.GithubUserInfo)
 	for i := 1; i <= length; i++ {
 		go hitURL(userName, follow, i, c)
 	}
@@ -115,7 +105,7 @@ func getUserFollowInfo(userName string) (int, int) {
 	res, err := client.Do(req)
 	utils.CheckErr(err)
 	body, err := ioutil.ReadAll(res.Body)
-	var user findUser
+	var user models.FindUser
 	err = json.Unmarshal(body, &user)
 	utils.CheckErr(err)
 	return user.Following, user.Followers
@@ -123,12 +113,12 @@ func getUserFollowInfo(userName string) (int, int) {
 
 // 맵에 유저의 정보를 담아줄 함수
 // 문제 없는거 확인
-func userSet1(user githubUserInfo, m map[string]int) {
+func userSet1(user models.GithubUserInfo, m map[string]int) {
 	m[user.Login] = 1
 }
 
 // 맵에 user가 들어있는지 확인해줄 함수
-func findUnfollwer(user githubUserInfo, m map[string]int) int {
+func findUnfollwer(user models.GithubUserInfo, m map[string]int) int {
 	val := m[user.Login]
 	if val != 1 {
 		return 1
@@ -136,7 +126,7 @@ func findUnfollwer(user githubUserInfo, m map[string]int) int {
 	return 0
 }
 
-func hitURL(userName string, follow string, i int, c chan githubUserInfo) {
+func hitURL(userName string, follow string, i int, c chan models.GithubUserInfo) {
 	pageURL := baseurl + userName + "/" + follow + "?per_page=100&page=" + strconv.Itoa(i)
 	req, err := http.NewRequest("GET", pageURL, nil)
 	utils.CheckErr(err)
