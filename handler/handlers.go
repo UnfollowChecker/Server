@@ -27,12 +27,11 @@ func userSet1(user models.GithubUserInfo, m map[string]int) {
 }
 
 // 맵에 user가 들어있는지 확인해줄 함수
-func findUnfollwer(user models.GithubUserInfo, m map[string]int) int {
+func findUnfollwer(user models.GithubUserInfo, m map[string]int, list *User) {
 	val := m[user.Login]
 	if val != 1 {
-		return 1
+		*list = append(*list, user)
 	}
-	return 0
 }
 
 func hitURL(userName string, follow string, i int, c chan models.GithubUserInfo) {
@@ -108,10 +107,7 @@ func UnfollowingCheckFunc(c echo.Context) error {
 		userSet1(user, m)
 	}
 	for _, user := range followersList {
-		a := findUnfollwer(user, m)
-		if a == 1 {
-			list = append(list, user)
-		}
+		findUnfollwer(user, m, &list)
 	}
 	sort.Sort(list)
 	return c.JSON(200, list)
@@ -138,10 +134,7 @@ func UnfollowersCheckFunc(c echo.Context) error {
 		userSet1(user, m)
 	}
 	for _, user := range followingList {
-		a := findUnfollwer(user, m)
-		if a == 1 {
-			list = append(list, user)
-		}
+		findUnfollwer(user, m, &list)
 	}
 	sort.Sort(list)
 	return c.JSON(200, list)
