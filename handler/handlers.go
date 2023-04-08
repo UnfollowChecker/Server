@@ -130,7 +130,6 @@ func UnfollowerCheckFunc(c echo.Context) error {
 	)
 
 	followingNum, followersNum := getUserFollowInfo(userName)
-	fmt.Println(followingNum, followersNum)
 	go getFollowUserList(userName, "following", followingNum, &followingList, followingCh, ch)
 	go getFollowUserList(userName, "followers", followersNum, &followersList, followersCh, ch)
 	fmt.Println(<-ch)
