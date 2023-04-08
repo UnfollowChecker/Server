@@ -117,7 +117,7 @@ func UnfollowingCheckFunc(c echo.Context) error {
 	return c.JSON(200, list)
 }
 
-func UnfollowerCheckFunc(c echo.Context) error {
+func UnfollowersCheckFunc(c echo.Context) error {
 	userName := c.QueryParam("userName")
 	followingCh := make(chan models.GithubUserInfo)
 	followersCh := make(chan models.GithubUserInfo)
