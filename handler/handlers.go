@@ -5,11 +5,13 @@ import (
 	"Server/private"
 	"Server/utils"
 	"encoding/json"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
 	"sort"
 	"strconv"
+	"sync"
 )
 
 type User []models.GithubUserInfo
@@ -52,23 +54,19 @@ func hitURL(userName string, follow string, i int, c chan models.GithubUserInfo)
 }
 
 // 팔로잉, 팔로워 두 함수를 하나로 합침
-func getFollowUserList(userName string, follow string, length int) User {
+func getFollowUserList(userName string, follow string, length int, list *User, ch chan models.GithubUserInfo) {
 	userLen := length
 	if length%100 != 0 {
 		length = length/100 + 1
 	} else {
 		length = length / 100
 	}
-	list := make(User, 0)
-	c := make(chan models.GithubUserInfo)
 	for i := 1; i <= length; i++ {
-		go hitURL(userName, follow, i, c)
+		go hitURL(userName, follow, i, ch)
 	}
 	for i := 0; i < userLen; i++ {
-		user := <-c
-		list = append(list, user)
+		*list = append(*list, <-ch)
 	}
-	return list
 }
 
 // 내 팔로잉 팔로워 갯수를 알아오는 함수
@@ -90,15 +88,22 @@ func getUserFollowInfo(userName string) (int, int) {
 
 func UnfollowingCheckFunc(c echo.Context) error {
 	userName := c.QueryParam("userName")
+	followingCh := make(chan models.GithubUserInfo)
+	followersCh := make(chan models.GithubUserInfo)
 	m := make(map[string]int)
 	var (
 		followingList User
 		followersList User
 		list          User
 	)
+	mutex := &sync.Mutex{}
+
 	followingNum, followersNum := getUserFollowInfo(userName)
-	followingList = getFollowUserList(userName, "following", followingNum)
-	followersList = getFollowUserList(userName, "followers", followersNum)
+	fmt.Println(followingNum, followersNum)
+	mutex.Lock()
+	getFollowUserList(userName, "following", followingNum, &followingList, followingCh)
+	getFollowUserList(userName, "followers", followersNum, &followersList, followersCh)
+	mutex.Unlock()
 	for _, user := range followingList {
 		userSet1(user, m)
 	}
@@ -108,30 +113,31 @@ func UnfollowingCheckFunc(c echo.Context) error {
 			list = append(list, user)
 		}
 	}
+	fmt.Println(followingList.Len(), followersList.Len())
 	sort.Sort(list)
 	return c.JSON(200, list)
 }
 
-func UnfollowerCheckFunc(c echo.Context) error {
-	userName := c.QueryParam("userName")
-	m := make(map[string]int)
-	var (
-		followingList User
-		followersList User
-		list          User
-	)
-	followingNum, followersNum := getUserFollowInfo(userName)
-	followingList = getFollowUserList(userName, "following", followingNum)
-	followersList = getFollowUserList(userName, "followers", followersNum)
-	for _, user := range followersList {
-		userSet1(user, m)
-	}
-	for _, user := range followingList {
-		a := findUnfollwer(user, m)
-		if a == 1 {
-			list = append(list, user)
-		}
-	}
-	sort.Sort(list)
-	return c.JSON(200, list)
-}
+//func UnfollowerCheckFunc(c echo.Context) error {
+//	userName := c.QueryParam("userName")
+//	m := make(map[string]int)
+//	var (
+//		followingList User
+//		followersList User
+//		list          User
+//	)
+//	followingNum, followersNum := getUserFollowInfo(userName)
+//	followingList = getFollowUserList(userName, "following", followingNum)
+//	followersList = getFollowUserList(userName, "followers", followersNum)
+//	for _, user := range followersList {
+//		userSet1(user, m)
+//	}
+//	for _, user := range followingList {
+//		a := findUnfollwer(user, m)
+//		if a == 1 {
+//			list = append(list, user)
+//		}
+//	}
+//	sort.Sort(list)
+//	return c.JSON(200, list)
+//}
