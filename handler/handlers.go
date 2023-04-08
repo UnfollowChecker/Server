@@ -117,26 +117,33 @@ func UnfollowingCheckFunc(c echo.Context) error {
 	return c.JSON(200, list)
 }
 
-//func UnfollowerCheckFunc(c echo.Context) error {
-//	userName := c.QueryParam("userName")
-//	m := make(map[string]int)
-//	var (
-//		followingList User
-//		followersList User
-//		list          User
-//	)
-//	followingNum, followersNum := getUserFollowInfo(userName)
-//	followingList = getFollowUserList(userName, "following", followingNum)
-//	followersList = getFollowUserList(userName, "followers", followersNum)
-//	for _, user := range followersList {
-//		userSet1(user, m)
-//	}
-//	for _, user := range followingList {
-//		a := findUnfollwer(user, m)
-//		if a == 1 {
-//			list = append(list, user)
-//		}
-//	}
-//	sort.Sort(list)
-//	return c.JSON(200, list)
-//}
+func UnfollowerCheckFunc(c echo.Context) error {
+	userName := c.QueryParam("userName")
+	followingCh := make(chan models.GithubUserInfo)
+	followersCh := make(chan models.GithubUserInfo)
+	ch := make(chan int)
+	m := make(map[string]int)
+	var (
+		followingList User
+		followersList User
+		list          User
+	)
+
+	followingNum, followersNum := getUserFollowInfo(userName)
+	fmt.Println(followingNum, followersNum)
+	go getFollowUserList(userName, "following", followingNum, &followingList, followingCh, ch)
+	go getFollowUserList(userName, "followers", followersNum, &followersList, followersCh, ch)
+	fmt.Println(<-ch)
+	fmt.Println(<-ch)
+	for _, user := range followersList {
+		userSet1(user, m)
+	}
+	for _, user := range followingList {
+		a := findUnfollwer(user, m)
+		if a == 1 {
+			list = append(list, user)
+		}
+	}
+	sort.Sort(list)
+	return c.JSON(200, list)
+}
