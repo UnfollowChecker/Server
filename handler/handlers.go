@@ -114,6 +114,14 @@ func UnfollowingCheckFunc(c echo.Context) error {
 	for _, user := range followersList {
 		findUnfollwer(user, m, &list)
 	}
+	if list.Len() == 0 {
+		a := models.GithubUserInfo{
+			Login:     "1",
+			HTMLURL:   "1",
+			AvatarURL: "1",
+		}
+		list = append(list, a)
+	}
 	sort.Sort(list)
 	return c.JSON(200, list)
 }
@@ -143,6 +151,14 @@ func UnfollowersCheckFunc(c echo.Context) error {
 	}
 	for _, user := range followingList {
 		findUnfollwer(user, m, &list)
+	}
+	if list.Len() == 0 {
+		a := models.GithubUserInfo{
+			Login:     "1",
+			HTMLURL:   "1",
+			AvatarURL: "1",
+		}
+		list = append(list, a)
 	}
 	sort.Sort(list)
 	return c.JSON(200, list)
