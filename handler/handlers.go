@@ -109,6 +109,9 @@ func UnfollowingCheckFunc(c echo.Context) error {
 	for _, user := range followersList {
 		findUnfollwer(user, m, &list)
 	}
+	if list.Len() == 0 {
+		return c.NoContent(204)
+	}
 	sort.Sort(list)
 	return c.JSON(200, list)
 }
@@ -135,6 +138,9 @@ func UnfollowersCheckFunc(c echo.Context) error {
 	}
 	for _, user := range followingList {
 		findUnfollwer(user, m, &list)
+	}
+	if list.Len() == 0 {
+		return c.NoContent(204)
 	}
 	sort.Sort(list)
 	return c.JSON(200, list)
