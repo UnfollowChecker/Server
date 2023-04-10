@@ -79,6 +79,9 @@ func getUserFollowInfo(userName string) (int, int) {
 	res, err := client.Do(req)
 	utils.CheckErr(err)
 	body, err := ioutil.ReadAll(res.Body)
+	if res.StatusCode == 404 {
+		return -1, -1
+	}
 	var user models.FindUser
 	err = json.Unmarshal(body, &user)
 	utils.CheckErr(err)
@@ -98,7 +101,9 @@ func UnfollowingCheckFunc(c echo.Context) error {
 	)
 
 	followingNum, followersNum := getUserFollowInfo(userName)
-	fmt.Println(followingNum, followersNum)
+	if followingNum == -1 {
+		return c.NoContent(404)
+	}
 	go getFollowUserList(userName, "following", followingNum, &followingList, followingCh, ch)
 	go getFollowUserList(userName, "followers", followersNum, &followersList, followersCh, ch)
 	fmt.Println(<-ch)
@@ -108,9 +113,6 @@ func UnfollowingCheckFunc(c echo.Context) error {
 	}
 	for _, user := range followersList {
 		findUnfollwer(user, m, &list)
-	}
-	if list.Len() == 0 {
-		return c.NoContent(204)
 	}
 	sort.Sort(list)
 	return c.JSON(200, list)
@@ -129,6 +131,9 @@ func UnfollowersCheckFunc(c echo.Context) error {
 	)
 
 	followingNum, followersNum := getUserFollowInfo(userName)
+	if followingNum == -1 {
+		return c.NoContent(404)
+	}
 	go getFollowUserList(userName, "following", followingNum, &followingList, followingCh, ch)
 	go getFollowUserList(userName, "followers", followersNum, &followersList, followersCh, ch)
 	fmt.Println(<-ch)
@@ -138,9 +143,6 @@ func UnfollowersCheckFunc(c echo.Context) error {
 	}
 	for _, user := range followingList {
 		findUnfollwer(user, m, &list)
-	}
-	if list.Len() == 0 {
-		return c.NoContent(204)
 	}
 	sort.Sort(list)
 	return c.JSON(200, list)
