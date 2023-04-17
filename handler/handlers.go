@@ -4,6 +4,7 @@ import (
 	"Server/models"
 	"Server/private"
 	"Server/utils"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -95,9 +96,10 @@ func getUserFollowInfo(userName string) (int, int) {
 	}
 	jsonBody, err := json.Marshal(requestBody)
 	utils.CheckErr(err)
-	req, err := http.NewRequest("GET", baseurl, nil)
+	req, err := http.NewRequest("POST", baseurl, bytes.NewBuffer(jsonBody))
 	utils.CheckErr(err)
 	req.Header.Set("Authorization", "Bearer "+private.Token)
+	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 
 	res, err := client.Do(req)
