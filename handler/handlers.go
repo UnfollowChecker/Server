@@ -19,7 +19,7 @@ func (a User) Len() int           { return len(a) }
 func (a User) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a User) Less(i, j int) bool { return a[i].Login < a[j].Login }
 
-var baseurl = "https://api.github.com/users/"
+var baseurl = "https://api.github.com/graphql"
 
 // 맵에 유저의 정보를 담아줄 함수
 func userSet1(user models.GithubUserInfo, m map[string]int) {
