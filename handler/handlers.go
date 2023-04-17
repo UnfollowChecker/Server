@@ -4,7 +4,6 @@ import (
 	"Server/models"
 	"Server/private"
 	"Server/utils"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -20,7 +19,7 @@ func (a User) Len() int           { return len(a) }
 func (a User) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a User) Less(i, j int) bool { return a[i].Login < a[j].Login }
 
-var baseurl = "https://api.github.com/graphql"
+var baseurl = "https://api.github.com/users/"
 
 // 맵에 유저의 정보를 담아줄 함수
 func userSet1(user models.GithubUserInfo, m map[string]int) {
@@ -71,38 +70,22 @@ func getFollowUserList(userName string, follow string, length int, list *User, c
 
 // 내 팔로잉 팔로워 갯수를 알아오는 함수
 func getUserFollowInfo(userName string) (int, int) {
-
-	query := `query {
-user(login: "` + userName + `") {
-	followers {
-      totalCount
-    }
-    following {
-      totalCount
-    }
-  }
-}
-	`
-	requestBody := &models.GraphqlRequest{
-		Query: query,
-	}
-	jsonBody, err := json.Marshal(requestBody)
-	utils.CheckErr(err)
-	req, err := http.NewRequest("POST", baseurl, bytes.NewBuffer(jsonBody))
+	url := baseurl + userName
+	req, err := http.NewRequest("GET", url, nil)
 	utils.CheckErr(err)
 	req.Header.Set("Authorization", "Bearer "+private.Token)
-	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 
 	res, err := client.Do(req)
 	utils.CheckErr(err)
+	body, err := ioutil.ReadAll(res.Body)
 	if res.StatusCode == 404 {
 		return -1, -1
 	}
-	var userFollowInfo models.UserFollowInfo
-	err = json.NewDecoder(res.Body).Decode(&userFollowInfo)
-	fmt.Println(" 팔로잉 팔로워 수 : ", userFollowInfo.Data.User.Following.TotalCount, userFollowInfo.Data.User.Followers.TotalCount)
-	return userFollowInfo.Data.User.Following.TotalCount, userFollowInfo.Data.User.Followers.TotalCount
+	var user models.FindUser
+	err = json.Unmarshal(body, &user)
+	utils.CheckErr(err)
+	return user.Following, user.Followers
 }
 
 func UnfollowingCheckFunc(c echo.Context) error {
