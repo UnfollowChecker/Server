@@ -73,23 +73,15 @@ func getFollowUserList(userName string, follow string, length int, list *User, c
 func getUserFollowInfo(userName string) (int, int) {
 
 	query := `query {
-		user(login: "` + userName + `") {
-				following(first: 100) {
-					nodes {
-					login
-					name
-					avatarUrl
-					}
-				}
-				followers(first: 100) {
-					nodes {
-					login
-					name
-					avatarUrl
-					}
-				}
-			}
-		}
+user(login: "` + userName + `") {
+	followers {
+      totalCount
+    }
+    following {
+      totalCount
+    }
+  }
+}
 	`
 	requestBody := &models.GraphqlRequest{
 		Query: query,
@@ -104,14 +96,13 @@ func getUserFollowInfo(userName string) (int, int) {
 
 	res, err := client.Do(req)
 	utils.CheckErr(err)
-	body, err := ioutil.ReadAll(res.Body)
 	if res.StatusCode == 404 {
 		return -1, -1
 	}
-	var user models.FindUser
-	err = json.Unmarshal(body, &user)
-	utils.CheckErr(err)
-	return user.Following, user.Followers
+	var userFollowInfo models.UserFollowInfo
+	err = json.NewDecoder(res.Body).Decode(&userFollowInfo)
+	fmt.Println(" 팔로잉 팔로워 수 : ", userFollowInfo.Data.User.Following.TotalCount, userFollowInfo.Data.User.Followers.TotalCount)
+	return userFollowInfo.Data.User.Following.TotalCount, userFollowInfo.Data.User.Followers.TotalCount
 }
 
 func UnfollowingCheckFunc(c echo.Context) error {
