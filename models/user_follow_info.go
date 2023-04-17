@@ -9,6 +9,6 @@ type UserFollowInfo struct {
 			Following struct {
 				TotalCount int `json:"totalCount"`
 			} `json:"following"`
-		} `json:"data"`
-	}
+		} `json:"user"`
+	} `json:"data"`
 }
