@@ -70,8 +70,32 @@ func getFollowUserList(userName string, follow string, length int, list *User, c
 
 // 내 팔로잉 팔로워 갯수를 알아오는 함수
 func getUserFollowInfo(userName string) (int, int) {
-	url := baseurl + userName
-	req, err := http.NewRequest("GET", url, nil)
+
+	query := `query {
+		user(login: "` + userName + `") {
+				following(first: 100) {
+					nodes {
+					login
+					name
+					avatarUrl
+					}
+				}
+				followers(first: 100) {
+					nodes {
+					login
+					name
+					avatarUrl
+					}
+				}
+			}
+		}
+	`
+	requestBody := &models.GraphqlRequest{
+		Query: query,
+	}
+	jsonBody, err := json.Marshal(requestBody)
+	utils.CheckErr(err)
+	req, err := http.NewRequest("GET", baseurl, nil)
 	utils.CheckErr(err)
 	req.Header.Set("Authorization", "Bearer "+private.Token)
 	client := &http.Client{}
